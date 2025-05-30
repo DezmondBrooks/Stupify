@@ -1,0 +1,3 @@
+pyyaml
+faker
+openai
