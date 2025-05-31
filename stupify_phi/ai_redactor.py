@@ -3,23 +3,24 @@ import logging
 from typing import Literal
 
 try:
-    import openai
+    from openai import OpenAI
+    from openai.types.chat import ChatCompletionMessage
 except ImportError:
-    openai = None  # For environments where OpenAI is optional
+    OpenAI = None  # For environments where OpenAI is optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class AIRedactor:
-    def __init__(self, provider: Literal["openai", "local"] = "openai", model="gpt-4"):
+    def __init__(self, provider: Literal["openai", "local"] = "openai", model="gpt-4o"):
         self.provider = provider
         self.model = model
 
         if provider == "openai":
-            if not openai:
+            if not OpenAI:
                 raise ImportError("OpenAI module not installed. Run `pip install openai`.")
-            openai.api_key = os.getenv("OPENAI_API_KEY")
-            if not openai.api_key:
+            self.client = OpenAI()  # Creates a client using OPENAI_API_KEY from env var
+            if not os.getenv("OPENAI_API_KEY"):
                 raise ValueError("Missing OPENAI_API_KEY environment variable")
 
     def redact_text(self, text: str) -> str:
@@ -40,13 +41,13 @@ Text:
 Redacted:"""
 
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
                 max_tokens=1000
             )
-            return response.choices[0].message["content"].strip()
+            return response.choices[0].message.content.strip()
         except Exception as e:
             logger.error(f"OpenAI redaction failed: {e}")
             return "[ERROR: Redaction failed]"

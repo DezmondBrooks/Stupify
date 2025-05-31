@@ -14,15 +14,19 @@ def process_csv(input_file: str, output_file: str, config_path: str, use_ai: boo
 
     processed = []
     for row in rows:
+        # 1. Redact fields detected by regex/patterns
         detected = detect_fields(row)
         for field, kind in detected.items():
             row[field] = anonymize(row[field], kind)
 
-        # Optional AI redaction
-        if use_ai:
-            for field in config.get("ai_fields", []):
-                if field in row:
+        # 2. Fallback redaction for AI fields
+        for field in config.get("ai_fields", []):
+            if field in row:
+                if use_ai:
                     row[field] = ai.redact_text(row[field])
+                else:
+                    row[field] = "[REDACTED]"
+
         processed.append(row)
 
     with open(output_file, 'w', newline='') as csvfile:
