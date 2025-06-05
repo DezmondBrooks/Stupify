@@ -19,9 +19,12 @@ class AIRedactor:
         if provider == "openai":
             if not OpenAI:
                 raise ImportError("OpenAI module not installed. Run `pip install openai`.")
-            self.client = OpenAI()  # Creates a client using OPENAI_API_KEY from env var
-            if not os.getenv("OPENAI_API_KEY"):
+
+            # Skip API key check during testing if OpenAI is mocked
+            if not os.getenv("OPENAI_API_KEY") and not getattr(OpenAI, "__mock__", False):
                 raise ValueError("Missing OPENAI_API_KEY environment variable")
+
+            self.client = OpenAI()
 
     def redact_text(self, text: str) -> str:
         if self.provider == "openai":
@@ -53,6 +56,5 @@ Redacted:"""
             return "[ERROR: Redaction failed]"
 
     def _redact_with_local_model(self, text: str) -> str:
-        # Placeholder for a local model implementation (e.g., using HuggingFace transformers)
         logger.warning("Local AI redaction not yet implemented. Returning input unchanged.")
         return text
